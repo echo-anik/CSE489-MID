@@ -14,7 +14,7 @@ import '../services/database_service.dart';
 /// - Handles CRUD operations with proper error handling
 class LandmarkProvider with ChangeNotifier {
   final ApiService _apiService;
-  final AppDatabase _database;
+  final AppDatabase? _database;
 
   List<Landmark> _landmarks = [];
   bool _isLoading = false;
@@ -26,7 +26,7 @@ class LandmarkProvider with ChangeNotifier {
 
   LandmarkProvider({
     required ApiService apiService,
-    required AppDatabase database,
+    AppDatabase? database,
   })  : _apiService = apiService,
         _database = database;
 
@@ -48,10 +48,12 @@ class LandmarkProvider with ChangeNotifier {
       try {
         final apiLandmarks = await _apiService.getLandmarks();
 
-        // Update database with API data
-        await _database.clearLandmarks();
-        for (final landmark in apiLandmarks) {
-          await _database.insertLandmark(landmark);
+        // Update database with API data (if available)
+        if (_database != null) {
+          await _database!.clearLandmarks();
+          for (final landmark in apiLandmarks) {
+            await _database!.insertLandmark(landmark);
+          }
         }
 
         // Update state if API data is different
@@ -80,8 +82,10 @@ class LandmarkProvider with ChangeNotifier {
 
   /// Load landmarks from local database
   Future<void> _loadFromDatabase() async {
+    if (_database == null) return;
+
     try {
-      _landmarks = await _database.getLandmarks();
+      _landmarks = await _database!.getLandmarks();
       notifyListeners();
     } catch (e) {
       print('Error loading from database: $e');
@@ -113,8 +117,10 @@ class LandmarkProvider with ChangeNotifier {
         imageFile: imageFile,
       );
 
-      // Save to local database
-      await _database.insertLandmark(newLandmark);
+      // Save to local database (if available)
+      if (_database != null) {
+        await _database!.insertLandmark(newLandmark);
+      }
 
       // Update state
       _landmarks.add(newLandmark);
@@ -159,8 +165,10 @@ class LandmarkProvider with ChangeNotifier {
         imageFile: imageFile,
       );
 
-      // Update local database
-      await _database.updateLandmark(updatedLandmark);
+      // Update local database (if available)
+      if (_database != null) {
+        await _database!.updateLandmark(updatedLandmark);
+      }
 
       // Update state
       final index = _landmarks.indexWhere((l) => l.id == id);
@@ -193,8 +201,10 @@ class LandmarkProvider with ChangeNotifier {
       // Delete from API
       await _apiService.deleteLandmark(id);
 
-      // Delete from local database
-      await _database.deleteLandmark(id);
+      // Delete from local database (if available)
+      if (_database != null) {
+        await _database!.deleteLandmark(id);
+      }
 
       // Update state
       _landmarks.removeWhere((l) => l.id == id);
@@ -220,10 +230,12 @@ class LandmarkProvider with ChangeNotifier {
       // Get data from API
       final apiLandmarks = await _apiService.getLandmarks();
 
-      // Clear and update database
-      await _database.clearLandmarks();
-      for (final landmark in apiLandmarks) {
-        await _database.insertLandmark(landmark);
+      // Clear and update database (if available)
+      if (_database != null) {
+        await _database!.clearLandmarks();
+        for (final landmark in apiLandmarks) {
+          await _database!.insertLandmark(landmark);
+        }
       }
 
       // Update state
