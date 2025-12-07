@@ -1,10 +1,14 @@
+import 'package:floor/floor.dart';
+
 /// Landmark data model representing a geographical landmark
 ///
 /// This model represents a landmark with its location coordinates,
 /// title, and associated image data. It works in conjunction with
 /// LandmarkEntity for Floor database operations.
+@entity
 class Landmark {
   /// Unique identifier for the landmark (synced with server)
+  @PrimaryKey(autoGenerate: true)
   final int? id;
 
   /// Display title/name of the landmark

@@ -1,7 +1,9 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'dart:math' show sin, cos, sqrt, asin;
 import '../models/landmark.dart';
 import '../services/api_service.dart';
+import '../database/app_database.dart';
 import '../services/database_service.dart';
 
 /// Provider class for managing landmark state
@@ -281,13 +283,13 @@ class LandmarkProvider with ChangeNotifier {
     final dLat = _degreesToRadians(lat2 - lat1);
     final dLon = _degreesToRadians(lon2 - lon1);
 
-    final a = (dLat / 2).sin() * (dLat / 2).sin() +
-        _degreesToRadians(lat1).cos() *
-            _degreesToRadians(lat2).cos() *
-            (dLon / 2).sin() *
-            (dLon / 2).sin();
+    final a = sin(dLat / 2) * sin(dLat / 2) +
+        cos(_degreesToRadians(lat1)) *
+            cos(_degreesToRadians(lat2)) *
+            sin(dLon / 2) *
+            sin(dLon / 2);
 
-    final c = 2 * a.sqrt().asin();
+    final c = 2 * asin(sqrt(a));
     return R * c;
   }
 

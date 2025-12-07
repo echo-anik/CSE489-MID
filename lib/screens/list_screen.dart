@@ -45,7 +45,7 @@ class _ListScreenState extends State<ListScreen> {
   Future<void> _handleDelete(Landmark landmark) async {
     try {
       final provider = Provider.of<LandmarkProvider>(context, listen: false);
-      await provider.deleteLandmark(landmark.id);
+      await provider.deleteLandmark(landmark.id!);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -91,8 +91,8 @@ class _ListScreenState extends State<ListScreen> {
 
     return landmarks.where((landmark) {
       return landmark.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          landmark.lat.toString().contains(_searchQuery) ||
-          landmark.lon.toString().contains(_searchQuery);
+          landmark.latitude.toString().contains(_searchQuery) ||
+          landmark.longitude.toString().contains(_searchQuery);
     }).toList();
   }
 
@@ -134,7 +134,7 @@ class _ListScreenState extends State<ListScreen> {
   /// Build landmark card
   Widget _buildLandmarkCard(Landmark landmark) {
     return Dismissible(
-      key: Key(landmark.id),
+      key: Key(landmark.id?.toString() ?? ''),
       background: _buildDismissBackground(
         alignment: Alignment.centerLeft,
         color: Colors.blue,
@@ -178,9 +178,9 @@ class _ListScreenState extends State<ListScreen> {
                 // Thumbnail image
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child: landmark.image.isNotEmpty
+                  child: (landmark.imageUrl?.isNotEmpty ?? false)
                       ? Image.memory(
-                          base64Decode(landmark.image),
+                          base64Decode(landmark.imageUrl!),
                           width: 80,
                           height: 80,
                           fit: BoxFit.cover,
@@ -218,7 +218,7 @@ class _ListScreenState extends State<ListScreen> {
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
-                              'Lat: ${landmark.lat.toStringAsFixed(4)}',
+                              'Lat: ${landmark.latitude.toStringAsFixed(4)}',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: Colors.grey[700],
@@ -238,7 +238,7 @@ class _ListScreenState extends State<ListScreen> {
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
-                              'Lon: ${landmark.lon.toStringAsFixed(4)}',
+                              'Lon: ${landmark.longitude.toStringAsFixed(4)}',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: Colors.grey[700],
@@ -364,11 +364,11 @@ class _ListScreenState extends State<ListScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Image
-                if (landmark.image.isNotEmpty)
+                if (landmark.imageUrl?.isNotEmpty ?? false)
                   ClipRRect(
                     borderRadius: BorderRadius.circular(12),
                     child: Image.memory(
-                      base64Decode(landmark.image),
+                      base64Decode(landmark.imageUrl!),
                       width: double.infinity,
                       height: 200,
                       fit: BoxFit.cover,
@@ -397,9 +397,9 @@ class _ListScreenState extends State<ListScreen> {
                 const SizedBox(height: 16),
 
                 // Details
-                _buildDetailRow('ID', landmark.id),
-                _buildDetailRow('Latitude', landmark.lat.toStringAsFixed(6)),
-                _buildDetailRow('Longitude', landmark.lon.toStringAsFixed(6)),
+                _buildDetailRow('ID', landmark.id?.toString() ?? 'N/A'),
+                _buildDetailRow('Latitude', landmark.latitude.toStringAsFixed(6)),
+                _buildDetailRow('Longitude', landmark.longitude.toStringAsFixed(6)),
 
                 const SizedBox(height: 16),
 

@@ -41,9 +41,9 @@ class _FormScreenState extends State<FormScreen> {
   void _initializeForm() {
     if (widget.landmark != null) {
       _titleController.text = widget.landmark!.title;
-      _latitudeController.text = widget.landmark!.lat.toString();
-      _longitudeController.text = widget.landmark!.lon.toString();
-      _base64Image = widget.landmark!.image;
+      _latitudeController.text = widget.landmark!.latitude.toString();
+      _longitudeController.text = widget.landmark!.longitude.toString();
+      _base64Image = widget.landmark!.imageUrl;
     }
   }
 
@@ -260,23 +260,26 @@ class _FormScreenState extends State<FormScreen> {
     });
 
     try {
-      final landmark = Landmark(
-        id: widget.landmark?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-        title: _titleController.text.trim(),
-        lat: double.parse(_latitudeController.text),
-        lon: double.parse(_longitudeController.text),
-        image: _base64Image!,
-      );
-
       final provider = Provider.of<LandmarkProvider>(context, listen: false);
 
       if (widget.landmark != null) {
         // Update existing landmark
-        await provider.updateLandmark(landmark);
+        await provider.updateLandmark(
+          id: widget.landmark!.id!,
+          title: _titleController.text.trim(),
+          latitude: double.parse(_latitudeController.text),
+          longitude: double.parse(_longitudeController.text),
+          imageFile: _selectedImage,
+        );
         _showSuccessSnackBar('Landmark updated successfully');
       } else {
         // Create new landmark
-        await provider.addLandmark(landmark);
+        await provider.addLandmark(
+          title: _titleController.text.trim(),
+          latitude: double.parse(_latitudeController.text),
+          longitude: double.parse(_longitudeController.text),
+          imageFile: _selectedImage,
+        );
         _showSuccessSnackBar('Landmark added successfully');
       }
 
