@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:convert';
 import 'package:dio/dio.dart';
 import '../models/landmark.dart';
 
@@ -63,12 +62,16 @@ class ApiService {
   /// Example:
   /// ```dart
   /// try {
-  ///   final landmarks = await ApiService().fetchLandmarks();
+  ///   final landmarks = await ApiService().getLandmarks();
   ///   print('Found ${landmarks.length} landmarks');
   /// } catch (e) {
   ///   print('Error: $e');
   /// }
   /// ```
+  Future<List<Landmark>> getLandmarks() async {
+    return fetchLandmarks();
+  }
+
   Future<List<Landmark>> fetchLandmarks() async {
     try {
       final response = await _dio.get(baseUrl);
@@ -107,9 +110,9 @@ class ApiService {
   ///
   /// Parameters:
   /// - [title]: The landmark title
-  /// - [lat]: Latitude coordinate
-  /// - [lon]: Longitude coordinate
-  /// - [imageFile]: Image file to upload
+  /// - [latitude]: Latitude coordinate
+  /// - [longitude]: Longitude coordinate
+  /// - [imageFile]: Image file to upload (optional)
   ///
   /// Returns the created [Landmark] object.
   /// Throws [ApiException] on error.
@@ -118,29 +121,34 @@ class ApiService {
   /// ```dart
   /// final image = File('/path/to/image.jpg');
   /// final landmark = await ApiService().createLandmark(
-  ///   'Shaheed Minar',
-  ///   23.8103,
-  ///   90.4125,
-  ///   image,
+  ///   title: 'Shaheed Minar',
+  ///   latitude: 23.8103,
+  ///   longitude: 90.4125,
+  ///   imageFile: image,
   /// );
   /// ```
-  Future<Landmark> createLandmark(
-    String title,
-    double lat,
-    double lon,
-    File imageFile,
-  ) async {
+  Future<Landmark> createLandmark({
+    required String title,
+    required double latitude,
+    required double longitude,
+    File? imageFile,
+  }) async {
     try {
       // Prepare multipart form data
-      final formData = FormData.fromMap({
+      final Map<String, dynamic> formFields = {
         'title': title,
-        'lat': lat.toString(),
-        'lon': lon.toString(),
-        'image': await MultipartFile.fromFile(
+        'lat': latitude.toString(),
+        'lon': longitude.toString(),
+      };
+
+      if (imageFile != null) {
+        formFields['image'] = await MultipartFile.fromFile(
           imageFile.path,
           filename: imageFile.path.split('/').last,
-        ),
-      });
+        );
+      }
+
+      final formData = FormData.fromMap(formFields);
 
       final response = await _dio.post(
         baseUrl,
@@ -166,11 +174,11 @@ class ApiService {
           } else {
             // If no landmark returned, create one from the request data
             return Landmark(
-              id: data['id']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString(),
+              id: data['id'],
               title: title,
-              lat: lat,
-              lon: lon,
-              image: '', // Image URL will be set by server
+              latitude: latitude,
+              longitude: longitude,
+              imageUrl: '', // Image URL will be set by server
             );
           }
         }
@@ -194,36 +202,36 @@ class ApiService {
   /// Parameters:
   /// - [id]: Landmark ID to update
   /// - [title]: New title
-  /// - [lat]: New latitude
-  /// - [lon]: New longitude
+  /// - [latitude]: New latitude
+  /// - [longitude]: New longitude
   /// - [imageFile]: Optional new image file
   ///
-  /// Returns true if successful, false otherwise.
+  /// Returns the updated Landmark object.
   /// Throws [ApiException] on error.
   ///
   /// Example:
   /// ```dart
-  /// final success = await ApiService().updateLandmark(
-  ///   '123',
-  ///   'Updated Title',
-  ///   23.8103,
-  ///   90.4125,
+  /// final landmark = await ApiService().updateLandmark(
+  ///   id: 123,
+  ///   title: 'Updated Title',
+  ///   latitude: 23.8103,
+  ///   longitude: 90.4125,
   /// );
   /// ```
-  Future<bool> updateLandmark(
-    String id,
-    String title,
-    double lat,
-    double lon, {
+  Future<Landmark> updateLandmark({
+    required int id,
+    required String title,
+    required double latitude,
+    required double longitude,
     File? imageFile,
   }) async {
     try {
       // Prepare form data (x-www-form-urlencoded)
       final Map<String, dynamic> data = {
-        'id': id,
+        'id': id.toString(),
         'title': title,
-        'lat': lat.toString(),
-        'lon': lon.toString(),
+        'lat': latitude.toString(),
+        'lon': longitude.toString(),
       };
 
       Response response;
@@ -259,17 +267,31 @@ class ApiService {
       if (response.statusCode == 200) {
         final responseData = response.data;
 
-        // Handle different success response formats
+        // Try to return the updated landmark from response
         if (responseData is Map<String, dynamic>) {
-          return responseData['success'] == true ||
-              responseData['status'] == 'success' ||
-              responseData['message']?.toString().toLowerCase().contains('success') == true;
+          if (responseData['landmark'] != null) {
+            return Landmark.fromJson(responseData['landmark']);
+          } else if (responseData['data'] != null) {
+            return Landmark.fromJson(responseData['data']);
+          }
         }
 
-        return true;
+        // If no landmark in response, create one from request data
+        return Landmark(
+          id: id,
+          title: title,
+          latitude: latitude,
+          longitude: longitude,
+          imageUrl: imageFile != null ? '' : null,
+        );
       } else if (response.statusCode == 204) {
-        // No content - successful update
-        return true;
+        // No content - successful update, return landmark with updated data
+        return Landmark(
+          id: id,
+          title: title,
+          latitude: latitude,
+          longitude: longitude,
+        );
       } else {
         throw ApiException(
           'Failed to update landmark: ${response.statusMessage}',
@@ -293,16 +315,16 @@ class ApiService {
   ///
   /// Example:
   /// ```dart
-  /// final success = await ApiService().deleteLandmark('123');
+  /// final success = await ApiService().deleteLandmark(123);
   /// if (success) {
   ///   print('Landmark deleted');
   /// }
   /// ```
-  Future<bool> deleteLandmark(String id) async {
+  Future<bool> deleteLandmark(int id) async {
     try {
       final response = await _dio.delete(
         baseUrl,
-        queryParameters: {'id': id},
+        queryParameters: {'id': id.toString()},
       );
 
       if (response.statusCode == 200 || response.statusCode == 204) {

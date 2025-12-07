@@ -11,6 +11,7 @@ import 'screens/map_screen.dart';
 import 'screens/landmark_detail_screen.dart';
 import 'screens/add_landmark_screen.dart';
 import 'database/app_database.dart';
+import 'services/api_service.dart';
 import 'constants/app_constants.dart';
 
 void main() async {
@@ -38,7 +39,10 @@ void main() async {
           create: (_) => ThemeProvider(prefs),
         ),
         ChangeNotifierProvider(
-          create: (_) => LandmarkProvider(database),
+          create: (_) => LandmarkProvider(
+            apiService: ApiService(),
+            database: database,
+          ),
         ),
       ],
       child: const MyApp(),
@@ -129,7 +133,7 @@ class MyApp extends StatelessWidget {
       ),
 
       // Card theme
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         elevation: 2,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
@@ -199,7 +203,7 @@ class MyApp extends StatelessWidget {
       ),
 
       // Card theme
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         elevation: 4,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
@@ -220,7 +224,7 @@ class MyApp extends StatelessWidget {
       ),
 
       // Elevated button theme
-      elevatedButtonThemeData: ElevatedButtonThemeData(
+      elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppConstants.primaryColor,
           foregroundColor: Colors.white,

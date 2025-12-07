@@ -53,12 +53,12 @@ class _MapScreenState extends State<MapScreen> {
     for (var landmark in landmarks) {
       markers.add(
         Marker(
-          markerId: MarkerId(landmark.id),
-          position: LatLng(landmark.lat, landmark.lon),
+          markerId: MarkerId(landmark.id?.toString() ?? ''),
+          position: LatLng(landmark.latitude, landmark.longitude),
           icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
           infoWindow: InfoWindow(
             title: landmark.title,
-            snippet: '${landmark.lat.toStringAsFixed(4)}, ${landmark.lon.toStringAsFixed(4)}',
+            snippet: '${landmark.latitude.toStringAsFixed(4)}, ${landmark.longitude.toStringAsFixed(4)}',
             onTap: () => _showLandmarkDetails(landmark),
           ),
           onTap: () => _showLandmarkDetails(landmark),
@@ -117,11 +117,11 @@ class _MapScreenState extends State<MapScreen> {
                 ),
 
                 // Landmark image
-                if (landmark.image.isNotEmpty)
+                if (landmark.imageUrl?.isNotEmpty ?? false)
                   ClipRRect(
                     borderRadius: BorderRadius.circular(12),
                     child: Image.memory(
-                      base64Decode(landmark.image),
+                      base64Decode(landmark.imageUrl!),
                       width: double.infinity,
                       height: 200,
                       fit: BoxFit.cover,
@@ -153,7 +153,7 @@ class _MapScreenState extends State<MapScreen> {
                 _buildInfoRow(
                   Icons.location_on,
                   'Coordinates',
-                  '${landmark.lat.toStringAsFixed(6)}, ${landmark.lon.toStringAsFixed(6)}',
+                  '${landmark.latitude.toStringAsFixed(6)}, ${landmark.longitude.toStringAsFixed(6)}',
                 ),
 
                 const SizedBox(height: 12),
@@ -162,7 +162,7 @@ class _MapScreenState extends State<MapScreen> {
                 _buildInfoRow(
                   Icons.tag,
                   'ID',
-                  landmark.id,
+                  landmark.id?.toString() ?? 'N/A',
                 ),
 
                 const SizedBox(height: 24),
@@ -284,7 +284,7 @@ class _MapScreenState extends State<MapScreen> {
   Future<void> _deleteLandmark(Landmark landmark) async {
     try {
       final provider = Provider.of<LandmarkProvider>(context, listen: false);
-      await provider.deleteLandmark(landmark.id);
+      await provider.deleteLandmark(landmark.id!);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
