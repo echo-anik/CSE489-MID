@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -17,20 +18,31 @@ import 'constants/app_constants.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize database
-  final database = await $FloorAppDatabase.databaseBuilder('landmarks.db').build();
-
   // Initialize SharedPreferences
   final prefs = await SharedPreferences.getInstance();
 
-  // Request permissions
-  await _requestPermissions();
+  // Initialize database (skip on web as sqflite doesn't work on web)
+  AppDatabase? database;
+  if (!kIsWeb) {
+    try {
+      database = await $FloorAppDatabase.databaseBuilder('landmarks.db').build();
+    } catch (e) {
+      debugPrint('Database initialization failed: $e');
+    }
+  }
 
-  // Set preferred orientations
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
+  // Request permissions (skip on web)
+  if (!kIsWeb) {
+    await _requestPermissions();
+  }
+
+  // Set preferred orientations (skip on web)
+  if (!kIsWeb) {
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+  }
 
   runApp(
     MultiProvider(
