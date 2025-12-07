@@ -15,7 +15,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _currentIndex = 0;
+  int _currentIndex = 1; // Start with List view instead of Map (better for web)
 
   // Screens for each tab
   final List<Widget> _screens = [
