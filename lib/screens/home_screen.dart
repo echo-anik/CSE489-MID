@@ -4,6 +4,7 @@ import 'map_screen.dart';
 import 'list_screen.dart';
 import 'form_screen.dart';
 import '../providers/landmark_provider.dart';
+import '../providers/theme_provider.dart';
 
 /// Home screen with bottom navigation bar
 /// Manages navigation between Map, Records, and New Entry tabs
@@ -114,6 +115,24 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
         actions: [
+          // Theme toggle button
+          Consumer<ThemeProvider>(
+            builder: (context, themeProvider, child) {
+              return IconButton(
+                icon: Icon(
+                  themeProvider.themeMode == ThemeMode.dark
+                      ? Icons.light_mode
+                      : Icons.dark_mode,
+                ),
+                tooltip: themeProvider.themeMode == ThemeMode.dark
+                    ? 'Switch to Light Mode'
+                    : 'Switch to Dark Mode',
+                onPressed: () {
+                  themeProvider.toggleTheme();
+                },
+              );
+            },
+          ),
           // Refresh button
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -141,7 +160,9 @@ class _HomeScreenState extends State<HomeScreen> {
         },
         type: BottomNavigationBarType.fixed,
         selectedItemColor: Theme.of(context).primaryColor,
-        unselectedItemColor: Colors.grey,
+        unselectedItemColor: Theme.of(context).brightness == Brightness.dark
+            ? Colors.grey[400]
+            : Colors.grey[700],
         selectedFontSize: 12,
         unselectedFontSize: 12,
         items: const [
