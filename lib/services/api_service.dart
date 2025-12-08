@@ -150,10 +150,14 @@ class ApiService {
       };
 
       if (imageFile != null) {
-        formFields['image'] = await MultipartFile.fromFile(
-          imageFile.path,
-          filename: path.basename(imageFile.path),
-        );
+        try {
+          formFields['image'] = await MultipartFile.fromFile(
+            imageFile.path,
+            filename: path.basename(imageFile.path),
+          );
+        } catch (e) {
+          throw Exception('Failed to read image file: ${e.toString()}');
+        }
       }
 
       final formData = FormData.fromMap(formFields);
@@ -246,12 +250,19 @@ class ApiService {
 
       if (imageFile != null) {
         // If image is provided, use multipart
-        final formData = FormData.fromMap({
-          ...data,
-          'image': await MultipartFile.fromFile(
+        MultipartFile imageMultipart;
+        try {
+          imageMultipart = await MultipartFile.fromFile(
             imageFile.path,
             filename: path.basename(imageFile.path),
-          ),
+          );
+        } catch (e) {
+          throw Exception('Failed to read image file: ${e.toString()}');
+        }
+
+        final formData = FormData.fromMap({
+          ...data,
+          'image': imageMultipart,
         });
 
         response = await _dio.put(
