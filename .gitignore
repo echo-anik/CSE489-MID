@@ -9,6 +9,7 @@
 .history
 .svn/
 migrate_working_dir/
+nul
 
 # IntelliJ related
 *.iml
@@ -61,3 +62,20 @@ coverage/
 
 # Test related
 test/.test_coverage.dart
+
+# Local configuration
+.claude/settings.local.json
+.metadata
+android/local.properties
+android/app/build.gradle
+android/settings.gradle
+android/build.gradle.kts
+android/settings.gradle.kts
+android/app/build.gradle.kts
+android/gradle/
+android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
+android/app/src/debug/
+android/app/src/profile/
+android/app/src/main/res/mipmap-*
+android/app/src/main/res/values/
+android/.gitignore

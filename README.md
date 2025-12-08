@@ -2,6 +2,18 @@
 
 A comprehensive Flutter application for managing and exploring landmarks across Bangladesh with interactive map visualization, real-time data synchronization, and offline capabilities.
 
+## 📥 Quick Download
+
+**Ready to use APK (Android):**
+- Download: [bangladesh-landmarks.apk](bangladesh-landmarks.apk) (49.1 MB)
+- Minimum Android Version: 5.0 (API 21)
+
+**Installation:**
+1. Download the APK file to your Android device
+2. Enable "Install from Unknown Sources" in Settings → Security
+3. Tap the downloaded APK to install
+4. Open and start using the app!
+
 ## Overview
 
 This mobile application allows users to discover, add, edit, and manage landmarks throughout Bangladesh. Built with Flutter, it provides a seamless cross-platform experience with an intuitive interface featuring interactive maps, detailed listings, and easy landmark management.
@@ -370,24 +382,31 @@ This project is developed as part of the CSE489 course assignment. All rights re
 ## Credits
 
 ### Development Team
-- Developed for CSE489 Lab Mid Assignment
-- Institution: [Your University Name]
-- Semester: [Current Semester]
+
+**Developer:**
+- Name: Khandoker Wahiduzzaman Anik
+- Student ID: 24141115
+- Course: CSE489 Lab Mid Assignment
+- Date: December 2025
 
 ### Third-Party Services
-- **API Provider**: AnonTech Labs (https://labs.anontech.info)
-- **Map Services**: Google Maps Platform / OpenStreetMap
+
+- **API Provider**: AnonTech Labs (<https://labs.anontech.info>)
+- **Map Services**: OpenStreetMap (No API key required)
 - **Flutter Framework**: Google LLC
 
 ### Dependencies
+
 This project uses various open-source packages. See `pubspec.yaml` for a complete list.
 
 ## Contact
 
 For questions, issues, or feedback:
-- Course: CSE489
-- Assignment: Lab Mid - Flutter Landmark Management App
-- Instructor: [Instructor Name]
+
+- **Developer**: Khandoker Wahiduzzaman Anik
+- **Student ID**: 24141115
+- **Course**: CSE489
+- **Assignment**: Lab Mid - Flutter Landmark Management App
 
 ---
 
