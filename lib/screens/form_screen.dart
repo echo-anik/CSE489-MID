@@ -383,15 +383,40 @@ class _FormScreenState extends State<FormScreen> {
       );
     } else if (_base64Image != null && _base64Image!.isNotEmpty) {
       // Fallback: Display from base64
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Image.memory(
-          base64Decode(_base64Image!),
+      try {
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.memory(
+            base64Decode(_base64Image!),
+            height: 200,
+            width: double.infinity,
+            fit: BoxFit.cover,
+          ),
+        );
+      } catch (e) {
+        // Invalid base64, show placeholder
+        return Container(
           height: 200,
-          width: double.infinity,
-          fit: BoxFit.cover,
-        ),
-      );
+          decoration: BoxDecoration(
+            color: Colors.grey[200],
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.red),
+          ),
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.error, size: 60, color: Colors.red[400]),
+                const SizedBox(height: 8),
+                Text(
+                  'Invalid image data',
+                  style: TextStyle(color: Colors.red[600]),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
     } else {
       return Container(
         height: 200,
