@@ -279,6 +279,9 @@ class _FormScreenState extends State<FormScreen> {
         // Update existing landmark
         final landmarkId = widget.landmark!.id;
         if (landmarkId == null) {
+          setState(() {
+            _isLoading = false;
+          });
           _showErrorSnackBar('Cannot update landmark without ID');
           return;
         }
@@ -287,6 +290,9 @@ class _FormScreenState extends State<FormScreen> {
         final lon = double.tryParse(_longitudeController.text);
 
         if (lat == null || lon == null) {
+          setState(() {
+            _isLoading = false;
+          });
           _showErrorSnackBar('Invalid coordinates');
           return;
         }
@@ -298,9 +304,15 @@ class _FormScreenState extends State<FormScreen> {
           longitude: lon,
           imageFile: _selectedImage,
         );
+
+        setState(() {
+          _isLoading = false;
+        });
+
         _showSuccessSnackBar('Landmark updated successfully');
 
         // Navigate back after update
+        await Future.delayed(const Duration(milliseconds: 300));
         if (mounted) {
           Navigator.pop(context);
         }
@@ -310,6 +322,9 @@ class _FormScreenState extends State<FormScreen> {
         final lon = double.tryParse(_longitudeController.text);
 
         if (lat == null || lon == null) {
+          setState(() {
+            _isLoading = false;
+          });
           _showErrorSnackBar('Invalid coordinates');
           return;
         }
@@ -320,7 +335,6 @@ class _FormScreenState extends State<FormScreen> {
           longitude: lon,
           imageFile: _selectedImage,
         );
-        _showSuccessSnackBar('Landmark added successfully');
 
         // Reset form for next entry
         _titleController.clear();
@@ -331,6 +345,8 @@ class _FormScreenState extends State<FormScreen> {
           _base64Image = null;
           _isLoading = false;
         });
+
+        _showSuccessSnackBar('Landmark added successfully!');
       }
     } catch (e) {
       setState(() {
