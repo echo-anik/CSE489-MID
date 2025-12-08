@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
@@ -25,6 +27,7 @@ class _FormScreenState extends State<FormScreen> {
   final _longitudeController = TextEditingController();
 
   File? _selectedImage;
+  Uint8List? _webImageBytes;
   String? _base64Image;
   bool _isLoading = false;
   bool _isDetectingLocation = false;
@@ -139,12 +142,19 @@ class _FormScreenState extends State<FormScreen> {
     });
 
     try {
-      final File imageFile = File(image.path);
-      final bytes = await imageFile.readAsBytes();
+      final bytes = await image.readAsBytes();
       final base64String = base64Encode(bytes);
 
       setState(() {
-        _selectedImage = imageFile;
+        if (kIsWeb) {
+          // On web, store bytes directly
+          _webImageBytes = bytes;
+          _selectedImage = null;
+        } else {
+          // On mobile/desktop, use File
+          _selectedImage = File(image.path);
+          _webImageBytes = null;
+        }
         _base64Image = base64String;
         _isLoading = false;
       });
@@ -169,23 +179,25 @@ class _FormScreenState extends State<FormScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              ListTile(
-                leading: const Icon(Icons.camera_alt, color: Colors.blue),
-                title: const Text('Take Photo'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickImageFromCamera();
-                },
-              ),
+              // Camera option only available on mobile
+              if (!kIsWeb)
+                ListTile(
+                  leading: const Icon(Icons.camera_alt, color: Colors.blue),
+                  title: const Text('Take Photo'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickImageFromCamera();
+                  },
+                ),
               ListTile(
                 leading: const Icon(Icons.photo_library, color: Colors.blue),
-                title: const Text('Choose from Gallery'),
+                title: Text(kIsWeb ? 'Choose Image' : 'Choose from Gallery'),
                 onTap: () {
                   Navigator.pop(context);
                   _pickImageFromGallery();
                 },
               ),
-              if (_selectedImage != null || _base64Image != null)
+              if (_selectedImage != null || _webImageBytes != null || _base64Image != null)
                 ListTile(
                   leading: const Icon(Icons.delete, color: Colors.red),
                   title: const Text('Remove Image'),
@@ -193,6 +205,7 @@ class _FormScreenState extends State<FormScreen> {
                     Navigator.pop(context);
                     setState(() {
                       _selectedImage = null;
+                      _webImageBytes = null;
                       _base64Image = null;
                     });
                   },
@@ -264,20 +277,36 @@ class _FormScreenState extends State<FormScreen> {
 
       if (widget.landmark != null) {
         // Update existing landmark
+        final lat = double.tryParse(_latitudeController.text);
+        final lon = double.tryParse(_longitudeController.text);
+
+        if (lat == null || lon == null) {
+          _showErrorSnackBar('Invalid coordinates');
+          return;
+        }
+
         await provider.updateLandmark(
           id: widget.landmark!.id!,
           title: _titleController.text.trim(),
-          latitude: double.parse(_latitudeController.text),
-          longitude: double.parse(_longitudeController.text),
+          latitude: lat,
+          longitude: lon,
           imageFile: _selectedImage,
         );
         _showSuccessSnackBar('Landmark updated successfully');
       } else {
         // Create new landmark
+        final lat = double.tryParse(_latitudeController.text);
+        final lon = double.tryParse(_longitudeController.text);
+
+        if (lat == null || lon == null) {
+          _showErrorSnackBar('Invalid coordinates');
+          return;
+        }
+
         await provider.addLandmark(
           title: _titleController.text.trim(),
-          latitude: double.parse(_latitudeController.text),
-          longitude: double.parse(_longitudeController.text),
+          latitude: lat,
+          longitude: lon,
           imageFile: _selectedImage,
         );
         _showSuccessSnackBar('Landmark added successfully');
@@ -324,7 +353,19 @@ class _FormScreenState extends State<FormScreen> {
 
   /// Build image preview
   Widget _buildImagePreview() {
-    if (_selectedImage != null) {
+    if (_webImageBytes != null) {
+      // Web: Display from bytes
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Image.memory(
+          _webImageBytes!,
+          height: 200,
+          width: double.infinity,
+          fit: BoxFit.cover,
+        ),
+      );
+    } else if (_selectedImage != null && !kIsWeb) {
+      // Mobile/Desktop: Display from file
       return ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: Image.file(
@@ -335,6 +376,7 @@ class _FormScreenState extends State<FormScreen> {
         ),
       );
     } else if (_base64Image != null && _base64Image!.isNotEmpty) {
+      // Fallback: Display from base64
       return ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: Image.memory(
@@ -397,7 +439,7 @@ class _FormScreenState extends State<FormScreen> {
                   OutlinedButton.icon(
                     onPressed: _showImagePickerOptions,
                     icon: const Icon(Icons.add_a_photo),
-                    label: Text(_selectedImage != null || _base64Image != null
+                    label: Text(_selectedImage != null || _webImageBytes != null || _base64Image != null
                         ? 'Change Image'
                         : 'Select Image'),
                     style: OutlinedButton.styleFrom(
