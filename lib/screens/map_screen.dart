@@ -1,14 +1,14 @@
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import '../models/landmark.dart';
 import '../providers/landmark_provider.dart';
 import 'form_screen.dart';
 
-/// Map screen displaying landmarks on Google Maps
-/// Shows custom markers for each landmark with interactive bottom sheet
+/// Map screen displaying landmarks on OpenStreetMap
+/// Uses flutter_map - NO API KEY REQUIRED!
 class MapScreen extends StatefulWidget {
   const MapScreen({Key? key}) : super(key: key);
 
@@ -17,58 +17,36 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> {
-  GoogleMapController? _mapController;
-  Set<Marker> _markers = {};
+  final MapController _mapController = MapController();
   Landmark? _selectedLandmark;
 
   // Default location: Dhaka, Bangladesh
-  static const LatLng _defaultLocation = LatLng(23.6850, 90.3563);
+  static const LatLng _defaultLocation = LatLng(23.8103, 90.4125);
   static const double _defaultZoom = 12.0;
-
-  // Map style (optional - can be customized)
-  String? _mapStyle;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadMapStyle();
-  }
 
   @override
   void dispose() {
-    _mapController?.dispose();
+    _mapController.dispose();
     super.dispose();
   }
 
-  /// Load custom map style (optional)
-  Future<void> _loadMapStyle() async {
-    // Uncomment to load custom map style from assets
-    // _mapStyle = await rootBundle.loadString('assets/map_styles/standard.json');
-  }
-
   /// Build markers from landmarks
-  void _buildMarkers(List<Landmark> landmarks) {
-    final markers = <Marker>{};
-
-    for (var landmark in landmarks) {
-      markers.add(
-        Marker(
-          markerId: MarkerId(landmark.id?.toString() ?? ''),
-          position: LatLng(landmark.latitude, landmark.longitude),
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-          infoWindow: InfoWindow(
-            title: landmark.title,
-            snippet: '${landmark.latitude.toStringAsFixed(4)}, ${landmark.longitude.toStringAsFixed(4)}',
-            onTap: () => _showLandmarkDetails(landmark),
-          ),
+  List<Marker> _buildMarkers(List<Landmark> landmarks) {
+    return landmarks.map((landmark) {
+      return Marker(
+        point: LatLng(landmark.latitude, landmark.longitude),
+        width: 40,
+        height: 40,
+        child: GestureDetector(
           onTap: () => _showLandmarkDetails(landmark),
+          child: const Icon(
+            Icons.location_on,
+            size: 40,
+            color: Colors.red,
+          ),
         ),
       );
-    }
-
-    setState(() {
-      _markers = markers;
-    });
+    }).toList();
   }
 
   /// Show landmark details in bottom sheet
@@ -118,23 +96,7 @@ class _MapScreenState extends State<MapScreen> {
 
                 // Landmark image
                 if (landmark.imageUrl?.isNotEmpty ?? false)
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.memory(
-                      base64Decode(landmark.imageUrl!),
-                      width: double.infinity,
-                      height: 200,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          width: double.infinity,
-                          height: 200,
-                          color: Colors.grey[300],
-                          child: const Icon(Icons.image_not_supported, size: 50),
-                        );
-                      },
-                    ),
-                  ),
+                  _buildImageWidget(landmark.imageUrl),
 
                 const SizedBox(height: 16),
 
@@ -203,6 +165,68 @@ class _MapScreenState extends State<MapScreen> {
         );
       },
     );
+  }
+
+  /// Build image widget - handles both URLs and base64
+  Widget _buildImageWidget(String? imageUrl) {
+    if (imageUrl == null || imageUrl.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    // Check if it's a base64 string
+    if (imageUrl.startsWith('data:') ||
+        (!imageUrl.contains('/') && !imageUrl.contains('.') && imageUrl.length > 100)) {
+      try {
+        final base64String = imageUrl.replaceFirst(RegExp(r'^data:image\/[^;]+;base64,'), '');
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.memory(
+            base64Decode(base64String),
+            width: double.infinity,
+            height: 200,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(
+                width: double.infinity,
+                height: 200,
+                color: Colors.grey[300],
+                child: const Icon(Icons.image_not_supported, size: 50),
+              );
+            },
+          ),
+        );
+      } catch (e) {
+        return Container(
+          width: double.infinity,
+          height: 200,
+          color: Colors.grey[300],
+          child: const Icon(Icons.image_not_supported, size: 50),
+        );
+      }
+    } else {
+      // It's a URL or path
+      final fullUrl = imageUrl.startsWith('http')
+          ? imageUrl
+          : 'https://labs.anontech.info/cse489/t3/$imageUrl';
+
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Image.network(
+          fullUrl,
+          width: double.infinity,
+          height: 200,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return Container(
+              width: double.infinity,
+              height: 200,
+              color: Colors.grey[300],
+              child: const Icon(Icons.image_not_supported, size: 50),
+            );
+          },
+        ),
+      );
+    }
   }
 
   /// Build info row widget
@@ -306,45 +330,33 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
-  /// Handle map created
-  void _onMapCreated(GoogleMapController controller) {
-    _mapController = controller;
-    if (_mapStyle != null) {
-      controller.setMapStyle(_mapStyle);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Consumer<LandmarkProvider>(
       builder: (context, provider, child) {
-        // Build markers when landmarks change
-        if (provider.landmarks.isNotEmpty && _markers.isEmpty) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            _buildMarkers(provider.landmarks);
-          });
-        } else if (provider.landmarks.length != _markers.length) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            _buildMarkers(provider.landmarks);
-          });
-        }
+        final markers = _buildMarkers(provider.landmarks);
 
         return Stack(
           children: [
-            // Google Map
-            GoogleMap(
-              onMapCreated: _onMapCreated,
-              initialCameraPosition: const CameraPosition(
-                target: _defaultLocation,
-                zoom: _defaultZoom,
+            // OpenStreetMap - NO API KEY NEEDED!
+            FlutterMap(
+              mapController: _mapController,
+              options: MapOptions(
+                initialCenter: _defaultLocation,
+                initialZoom: _defaultZoom,
+                minZoom: 3,
+                maxZoom: 18,
               ),
-              markers: _markers,
-              myLocationEnabled: true,
-              myLocationButtonEnabled: true,
-              compassEnabled: true,
-              mapToolbarEnabled: true,
-              zoomControlsEnabled: false,
-              mapType: MapType.normal,
+              children: [
+                // Tile layer from OpenStreetMap
+                TileLayer(
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'com.cse489.bangladesh_landmarks',
+                  maxZoom: 19,
+                ),
+                // Markers layer
+                MarkerLayer(markers: markers),
+              ],
             ),
 
             // Loading indicator
@@ -362,7 +374,9 @@ class _MapScreenState extends State<MapScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(32),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.grey[850]
+                        : Colors.white,
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
