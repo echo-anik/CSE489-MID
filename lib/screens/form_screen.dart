@@ -318,12 +318,7 @@ class _FormScreenState extends State<FormScreen> {
         _showSuccessSnackBar('Landmark added successfully');
       }
 
-      setState(() {
-        _isLoading = false;
-      });
-
-      // Navigate back after short delay
-      await Future.delayed(const Duration(milliseconds: 500));
+      // Navigate back immediately
       if (mounted) {
         Navigator.pop(context);
       }
