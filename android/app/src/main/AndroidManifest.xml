@@ -26,7 +26,12 @@
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true">
 
-        <!-- Google Maps API Key -->
+        <!-- Google Maps API Key
+             Get your key from: https://console.cloud.google.com/google/maps-apis/
+             1. Create a project or select existing
+             2. Enable "Maps SDK for Android"
+             3. Create API key in Credentials
+             4. Replace YOUR_GOOGLE_MAPS_API_KEY_HERE with your key -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="YOUR_GOOGLE_MAPS_API_KEY_HERE" />
