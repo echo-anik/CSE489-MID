@@ -581,14 +581,6 @@ class _FormScreenState extends State<FormScreen> {
             ),
           ),
 
-          // Loading overlay
-          if (_isLoading && !_isDetectingLocation)
-            Container(
-              color: Colors.black26,
-              child: const Center(
-                child: CircularProgressIndicator(),
-              ),
-            ),
         ],
       ),
     );
