@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:path/path.dart' as path;
 import '../models/landmark.dart';
+import '../models/user.dart';
 
 /// API service for handling all HTTP requests to the landmark backend
 ///
@@ -18,8 +20,14 @@ class ApiService {
   /// Base URL for the API
   static const String baseUrl = 'https://labs.anontech.info/cse489/t3/api.php';
 
+  /// Auth API base URL
+  static const String authBaseUrl = 'https://labs.anontech.info/cse489/t3/auth.php';
+
   /// Request timeout duration
   static const Duration timeout = Duration(seconds: 30);
+
+  /// Current authentication token
+  String? _authToken;
 
   ApiService._internal() {
     _dio = Dio(
@@ -144,7 +152,7 @@ class ApiService {
       if (imageFile != null) {
         formFields['image'] = await MultipartFile.fromFile(
           imageFile.path,
-          filename: imageFile.path.split('/').last,
+          filename: path.basename(imageFile.path),
         );
       }
 
@@ -242,7 +250,7 @@ class ApiService {
           ...data,
           'image': await MultipartFile.fromFile(
             imageFile.path,
-            filename: imageFile.path.split('/').last,
+            filename: path.basename(imageFile.path),
           ),
         });
 
@@ -374,6 +382,13 @@ class ApiService {
         return ApiException('Request was cancelled');
 
       case DioExceptionType.connectionError:
+        // Check if this is a CORS error (common on web)
+        final errorMessage = error.message?.toLowerCase() ?? '';
+        if (errorMessage.contains('cors') || errorMessage.contains('xmlhttprequest')) {
+          return ApiException(
+            'CORS Error: The API server needs to allow web requests. Running in offline mode with cached data.',
+          );
+        }
         return ApiException(
           'No internet connection. Please check your network.',
         );
@@ -387,6 +402,177 @@ class ApiService {
           return ApiException('No internet connection');
         }
         return ApiException('Unexpected error: ${error.message}');
+    }
+  }
+
+  /// Sets the authentication token for API requests
+  void setAuthToken(String token) {
+    _authToken = token;
+    _dio.options.headers['Authorization'] = 'Bearer $token';
+  }
+
+  /// Clears the authentication token
+  void clearAuthToken() {
+    _authToken = null;
+    _dio.options.headers.remove('Authorization');
+  }
+
+  /// Login user with email and password
+  ///
+  /// Returns a map containing 'user' and 'token'
+  Future<Map<String, dynamic>> login({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final response = await _dio.post(
+        authBaseUrl,
+        data: {
+          'action': 'login',
+          'email': email,
+          'password': password,
+        },
+        options: Options(
+          contentType: Headers.formUrlEncodedContentType,
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        if (data is Map<String, dynamic>) {
+          final user = User.fromJson(data['user'] ?? data);
+          final token = data['token'] ?? data['authToken'] ?? '';
+          return {
+            'user': user,
+            'token': token,
+          };
+        }
+      }
+
+      throw ApiException('Login failed: Invalid response');
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  /// Register new user
+  ///
+  /// Returns a map containing 'user' and 'token'
+  Future<Map<String, dynamic>> register({
+    required String username,
+    required String email,
+    required String password,
+    String? name,
+  }) async {
+    try {
+      final response = await _dio.post(
+        authBaseUrl,
+        data: {
+          'action': 'register',
+          'username': username,
+          'email': email,
+          'password': password,
+          if (name != null) 'name': name,
+        },
+        options: Options(
+          contentType: Headers.formUrlEncodedContentType,
+        ),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = response.data;
+        if (data is Map<String, dynamic>) {
+          final user = User.fromJson(data['user'] ?? data);
+          final token = data['token'] ?? data['authToken'] ?? '';
+          return {
+            'user': user,
+            'token': token,
+          };
+        }
+      }
+
+      throw ApiException('Registration failed: Invalid response');
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  /// Logout current user
+  Future<void> logout() async {
+    try {
+      await _dio.post(
+        authBaseUrl,
+        data: {'action': 'logout'},
+        options: Options(
+          contentType: Headers.formUrlEncodedContentType,
+        ),
+      );
+      clearAuthToken();
+    } on DioException catch (e) {
+      // Still clear token even if logout fails
+      clearAuthToken();
+      throw _handleDioError(e);
+    }
+  }
+
+  /// Update user profile
+  Future<User> updateProfile({
+    required int id,
+    String? username,
+    String? email,
+    String? name,
+  }) async {
+    try {
+      final response = await _dio.put(
+        authBaseUrl,
+        data: {
+          'action': 'update_profile',
+          'id': id,
+          if (username != null) 'username': username,
+          if (email != null) 'email': email,
+          if (name != null) 'name': name,
+        },
+        options: Options(
+          contentType: Headers.formUrlEncodedContentType,
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        if (data is Map<String, dynamic>) {
+          return User.fromJson(data['user'] ?? data);
+        }
+      }
+
+      throw ApiException('Profile update failed');
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  /// Change user password
+  Future<void> changePassword({
+    required String oldPassword,
+    required String newPassword,
+  }) async {
+    try {
+      final response = await _dio.post(
+        authBaseUrl,
+        data: {
+          'action': 'change_password',
+          'old_password': oldPassword,
+          'new_password': newPassword,
+        },
+        options: Options(
+          contentType: Headers.formUrlEncodedContentType,
+        ),
+      );
+
+      if (response.statusCode != 200) {
+        throw ApiException('Password change failed');
+      }
+    } on DioException catch (e) {
+      throw _handleDioError(e);
     }
   }
 
