@@ -22,7 +22,8 @@ dependencies:
   sqflite: ^2.3.0
 
   # Location & Maps
-  google_maps_flutter: ^2.5.0
+  flutter_map: ^6.1.0
+  latlong2: ^0.9.0
   geolocator: ^10.1.0
   permission_handler: ^11.1.0
   geocoding: ^2.1.1
@@ -39,7 +40,9 @@ dependencies:
   intl: ^0.18.1
   shared_preferences: ^2.2.2
   path_provider: ^2.1.1
+  path: ^1.8.3
   uuid: ^4.2.2
+  connectivity_plus: ^5.0.0
 
 dev_dependencies:
   flutter_test:
