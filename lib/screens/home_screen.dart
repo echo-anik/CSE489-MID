@@ -159,6 +159,9 @@ class _HomeScreenState extends State<HomeScreen> {
           });
         },
         type: BottomNavigationBarType.fixed,
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? Colors.grey[900]
+            : Colors.white,
         selectedItemColor: Theme.of(context).primaryColor,
         unselectedItemColor: Theme.of(context).brightness == Brightness.dark
             ? Colors.grey[400]
