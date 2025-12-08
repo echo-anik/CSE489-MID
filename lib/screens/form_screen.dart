@@ -299,6 +299,11 @@ class _FormScreenState extends State<FormScreen> {
           imageFile: _selectedImage,
         );
         _showSuccessSnackBar('Landmark updated successfully');
+
+        // Navigate back after update
+        if (mounted) {
+          Navigator.pop(context);
+        }
       } else {
         // Create new landmark
         final lat = double.tryParse(_latitudeController.text);
@@ -316,11 +321,16 @@ class _FormScreenState extends State<FormScreen> {
           imageFile: _selectedImage,
         );
         _showSuccessSnackBar('Landmark added successfully');
-      }
 
-      // Navigate back immediately
-      if (mounted) {
-        Navigator.pop(context);
+        // Reset form for next entry
+        _titleController.clear();
+        _latitudeController.clear();
+        _longitudeController.clear();
+        setState(() {
+          _selectedImage = null;
+          _base64Image = null;
+          _isLoading = false;
+        });
       }
     } catch (e) {
       setState(() {
