@@ -277,6 +277,12 @@ class _FormScreenState extends State<FormScreen> {
 
       if (widget.landmark != null) {
         // Update existing landmark
+        final landmarkId = widget.landmark!.id;
+        if (landmarkId == null) {
+          _showErrorSnackBar('Cannot update landmark without ID');
+          return;
+        }
+
         final lat = double.tryParse(_latitudeController.text);
         final lon = double.tryParse(_longitudeController.text);
 
@@ -286,7 +292,7 @@ class _FormScreenState extends State<FormScreen> {
         }
 
         await provider.updateLandmark(
-          id: widget.landmark!.id!,
+          id: landmarkId,
           title: _titleController.text.trim(),
           latitude: lat,
           longitude: lon,
