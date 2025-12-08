@@ -160,14 +160,17 @@ class _HomeScreenState extends State<HomeScreen> {
         },
         type: BottomNavigationBarType.fixed,
         backgroundColor: Theme.of(context).brightness == Brightness.dark
-            ? Colors.grey[900]
+            ? Colors.grey[850]
             : Colors.white,
-        selectedItemColor: Theme.of(context).primaryColor,
+        selectedItemColor: Theme.of(context).brightness == Brightness.dark
+            ? Colors.tealAccent
+            : Theme.of(context).primaryColor,
         unselectedItemColor: Theme.of(context).brightness == Brightness.dark
-            ? Colors.grey[400]
-            : Colors.grey[700],
+            ? Colors.grey[500]
+            : Colors.grey[600],
         selectedFontSize: 12,
         unselectedFontSize: 12,
+        elevation: 8,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.map),
